@@ -1,12 +1,12 @@
 # TabSpaceFilterGit
 
 ## What does it do?
-It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters are the same ones used to implement GIT's LF/CRLF support, and this works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on proven tech -- LF/CRLF conversion isalrwady used by almost every Git for Windows client in existence.
+It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters are the same ones used to implement GIT's LF/CRLF support (via `core.auto_crlf`), and this works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on proven tech -- LF/CRLF conversion isalrwady used by almost every Git for Windows client in existence.
 
 ## What is it and how do I use it?
 A mini-installer written in BASH script.  Run it from your GIT Bash Shell from within your target clone, same as you would run any git command line action.
 ```
-$ install-tab-filter.sh {tabsize}
+$ git-filter-tab-install.sh {tabsize}
 ```
 If no `tabsize` is provided, a default of `4` is used.
 

@@ -26,10 +26,23 @@ echo "Installing TAB character filter @ $gitpath"
 gitpath="$(readlink -f "$gitpath")"
 gitpath="$gitpath/.git"
 
-printf "Registering filter.tabspace with tabsize=$ts... "
-git config --local filter.tabspace.clean  "expand --tabs=$ts"	   || exit -1
-git config --local filter.tabspace.smudge "unexpand -a --tabs=$ts" || exit -1
+printf "Registering filter.tabstyle with tabsize=$ts... "
+git config --local filter.tabstyle.clean  "expand --tabs=$ts"	   || exit -1
+git config --local filter.tabstyle.smudge "unexpand -a --tabs=$ts" || exit -1
 printf "DONE!\n"
+
+# ----------------------
+# this snippet behaves like core.auto_crlf=input, and should be recommended for any
+# developer who is not keen on using tab characters.
+#  * Check out as-is, commit as spaces.
+#
+# (todo: make this accessible via CLI)
+
+#printf "Registering filter.spacestyle with tabsize=$ts... "
+#git config --local filter.spacestyle.clean  "expand --tabs=$ts"   || exit -1
+#git config --local filter.spacestyle.smudge ""                    || exit -1
+#printf "DONE!\n"
+# ----------------------
 
 attrib_file="$gitpath/info/attributes"
 
