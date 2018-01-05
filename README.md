@@ -5,10 +5,21 @@ It configures a given GIT clone to perform smudge/clean filters on all tab/space
 
 ## What is it and how do I use it?
 A mini-installer written in BASH script.  Run it from your GIT Bash Shell from within your target clone, same as you would run any git command line action.
-```
-$ git-filter-tab-install.sh {tabsize}
-```
-If no `tabsize` is provided, a default of `4` is used.
+
+To edit locally as tabs and convert to spaces upstream:
+
+    $ git-filter-tab-install.sh --tabsize=4 --edit-as-tabs {repository_path}
+
+To edit locally as spaces and convert errant tabs to spaces upstream:
+
+    $ git-filter-tab-install.sh --tabsize=4 --edit-as-spaces {repository_path}
+
+To disable the filter and restore default  behavior:
+
+    $ git-filter-tab-install.sh --edit-as-is {repository_path}```
+
+* if no `tabsize` is provided, a default of `4` is used.
+* if `repository_path` is omitted, the curent working directory (CDW) is assumed.
 
 ## What does it depend on?
 * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
