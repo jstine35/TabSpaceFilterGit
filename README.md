@@ -14,9 +14,9 @@ If no `tabsize` is provided, a default of `4` is used.
 * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
 * On windows this is provided as part of `Git for Windows 2.10` or newer.
 
-## Limitation by design - Always use Spaces Upstream
-Int heory the upstream repository could choose to use either tabs or spaces, but my script doesn't support it and there's no plan to add such support.  Spaces play nicer with most HTML diff viewers, and more importantly there's no need to store "tab size" metadata with the repository.  An upstream repository stored as tabs automatically requires metadata just to implicitly convert it to spaces for local user editing.  Bottom line, ***always store upstream as spaces, and users who wish to edit using tabs locally can install this script***.
+### Limitation by design - Always use Spaces Upstream
+In theory the upstream repository could choose to use either tabs or spaces, but my script doesn't support it and there's no plan to add such support.  Spaces play nicer with most HTML diff viewers, and more importantly there's no need to store "tab size" metadata with the repository.  An upstream repository stored as tabs automatically requires metadata just to implicitly convert it to spaces for local user editing.  Bottom line, ***always store upstream as spaces, and users who wish to edit using tabs locally can install this script***.
 
-## TODOs
+### TODOs
  * Make an uninstaller
  * Add proper CLI switch support (currently it's just a quick hack to look for `--help`)
