@@ -16,7 +16,7 @@ To edit locally as spaces and convert errant tabs to spaces upstream:
 
 To disable the filter and restore default  behavior:
 
-    $ git-filter-tab-install.sh --edit-as-is {repository_path}```
+    $ git-filter-tab-install.sh --edit-as-is {repository_path}
 
 * if no `tabsize` is provided, a default of `4` is used.
 * if `repository_path` is omitted, the curent working directory (CDW) is assumed.
