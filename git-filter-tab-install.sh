@@ -113,7 +113,7 @@ gitpath=$(git rev-parse --show-toplevel)
 # the path to the expected bash format of /c/some/path.  So we must do so manually via cygpath,
 # elsewise some of our later commands like grep might fail to find the file...
 
-if where cygpath > /dev/null 2&>1; then
+if where cygpath > /dev/null 2>&1; then
     gitpath=$(cygpath "$gitpath")
 fi
 
@@ -141,8 +141,8 @@ gitpath="$gitpath/.git"
 
 if   [[ "$FILTER_MODE" != "none" ]]; then
     printf "Registering filters with tabsize=$ts... "
-    git config --local  filter.editastabs.clean   "expand --tabs=$ts"       || exit -1
-    git config --local  filter.editastabs.smudge  "unexpand -a --tabs=$ts"  || exit -1
+    git config --local  filter.editastabs.clean   "expand --tabs=$ts"                    || exit -1
+    git config --local  filter.editastabs.smudge  "unexpand --tabs=$ts --first-only"     || exit -1
 
     git config --local  filter.editasspaces.clean  "expand --tabs=$ts"      || exit -1
     git config --local  filter.editasspaces.smudge ""                       || exit -1
@@ -154,8 +154,8 @@ attrib_file="$gitpath/info/attributes"
 echo "Updating $(readlink -f "$attrib_file")..."
 
 # Remove existing entries, stop after one match.
-line_first=$(grep -m1 -n "# FilterTab Section:BEGIN" "$attrib_file" | cut -d':' -f1)
-line_last=$(grep  -m1 -n "# FilterTab Section:END"   "$attrib_file" | cut -d':' -f1)
+line_first=$(grep -m1 -n "# FilterTab Section:BEGIN" "$attrib_file" 2>/dev/null | cut -d':' -f1)
+line_last=$(grep  -m1 -n "# FilterTab Section:END"   "$attrib_file" 2>/dev/null | cut -d':' -f1)
 
 if [[ -n "$line_first" && -n "$line_last" ]]; then
     echo "    Deleting existing FilterTab Section found at lines $line_first -> $line_last"
