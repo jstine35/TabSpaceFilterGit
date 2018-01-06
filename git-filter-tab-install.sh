@@ -145,7 +145,7 @@ if   [[ "$FILTER_MODE" != "none" ]]; then
     git config --local  filter.editastabs.smudge  "unexpand --tabs=$ts --first-only"     || exit -1
 
     git config --local  filter.editasspaces.clean  "expand --tabs=$ts"      || exit -1
-    git config --local  filter.editasspaces.smudge ""                       || exit -1
+    git config --local  filter.editasspaces.smudge "cat"                    || exit -1
     printf "DONE!\n"
 fi
 

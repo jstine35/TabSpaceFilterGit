@@ -19,7 +19,7 @@ fi
 
 gitpath=$(git rev-parse --show-toplevel)
 
-if where cygpath > /dev/null 2&>1; then
+if where cygpath > /dev/null 2>&1; then
     gitpath=$(cygpath "$gitpath")
 fi
 
