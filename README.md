@@ -22,8 +22,9 @@ To disable the filter and restore default behavior:
 * if `repository_path` is omitted, the curent working directory (CDW) is assumed.
 
 ## What does it depend on?
-* The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
-* On windows this is provided as part of `Git for Windows 2.10` or newer.
+ * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
+ * Windows: dependencies are provided as part of `Git for Windows 2.10` or newer.
+ * OS-X: `brew install coreutils` may be required, depending on your OS version.
 
 ## Who can benefit from this tool?
 Surprisingly, almost everyone!  Whether you use spaces or tabs in your local edits, you can probably benefit from this
@@ -66,7 +67,9 @@ me the ability to edit space-expanded source files as if there were tab characte
 a time via arrow keys and such.  These either worked poorly or didn't work at all after a Visual Studio update, and
 they didn't solve problems when editing files in Notepad++ or Git Diff tools.  I've also been using Microsoft's own `Fix Mixed Tabs` extension which is part of their Power Productiivty Suite for a long time, but i's a band-aid fix that operates one one file at a time, doesn't do conversion on tabs inside of lines, and is also confined only to Visual Studio.
 
-Clearly a better solution would be generic to GIT itself, I thought.  It's only whitespace, after all.  Shouldn't we beable to handle the conversion in roughly the same way that GIT already handles CR/LF/CRLF conversions via the `core.auto_crlf` setting?  I did some digging, discovered that GIT exposes these automatic conversion steps via `filter.smudge` and `filter.clean` settings.  A few quick sandbox tests proved the concept.  This handy script followed, so that I could quicly apply these settings to all the clones that I work on _(which number in the dozens anymore these days)_.
+Clearly a better solution would be generic to GIT itself, I thought.  It's only whitespace, after all.  Shouldn't we beable to handle the conversion in roughly the same way that GIT already handles CR/LF/CRLF conversions via the `core.auto_crlf` setting?  I did some digging and discovered that GIT exposes these automatic conversion steps via `filter.smudge` and `filter.clean` settings.  A few quick sandbox tests proved the concept.  This handy script followed, so that I could quicly apply these settings to all the clones that I work on _(which number in the dozens anymore these days)_.
+
+I was inspired by answers found [on this StackOverflow page](https://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs) and decided to build a complete solution that would make it easy for me to quickly and safely apply tabspace expansion to any variety of projects.
 
 ----------------------------
 
