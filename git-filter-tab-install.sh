@@ -172,7 +172,7 @@ add_filetypes_to_attributes_file() {
         # and this script won't modify or override that preference.
         
         printf "    %-12s   --> " "$ft"
-        if grep "$ft"  "$attrib_file" | grep "$filtername" > /dev/null 2>/dev/null; then
+        if grep "$ft"  "$attrib_file" | egrep "editas\S" > /dev/null 2>/dev/null; then
             echo "SKIPPED"
         else
             >> "$attrib_file" printf "%-12s  filter=$filtername\n" "$ft"
