@@ -33,14 +33,14 @@ tabs just appear as if the work of some mischievous digital goblin.  Regardless,
 effortlessly by using `git-filter-tab-install.sh --edit-as-spaces`
 
 ## What are the caveats?
-### When using `--edit-as-spaces` mode:
+#### When using `--edit-as-spaces` mode:
 The only known caveat so far is that quoted text strings that depend on tabulation characters would be corrupted by this filter.
 The obvious workaround is to use `"\t"` instead of an actual ASCII TAB character.  It's highly unlikely any modern code would
 run into this problem and, if it did, it's really a case of poor development practice anyway, and should be fixed to use
 `\t`.  In theory a static analyzer could be used to find such things and report them for fixing prior to converting a
 repository to rely automatic tab expansion.
 
-### When using `--edit-as-tabs` mode:
+#### When using `--edit-as-tabs` mode:
 Again the problem is quoted strings, but it's a much more serious when editing locally as tabs.  Any quoted string with
 spaces will end up having tab characters inserted into it, and that will result in some very strange looking text output.
 To work around this problem, the script invokes `unexpand --first-only` which limits tabulation to affect only whitespace
