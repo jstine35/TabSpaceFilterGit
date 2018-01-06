@@ -30,6 +30,8 @@ filetypes_as_spaces=(
 
 FILTER_MODE=help
 SHOW_HELP=0
+FORCE_RESET=0
+NO_RESET=0
 ts=4
 
 POSITIONAL=()
@@ -41,6 +43,14 @@ case $key in
     -t|--tabsize)
     ts="$2"
     shift 2 # past argument + value
+    ;;
+    -f|--force)
+    FORCE_RESET="1"
+    shift
+    ;;
+    --no-reset)
+    NO_RESET="1"
+    shift
     ;;
     --filter-input|--edit-as-spaces)
     FILTER_MODE="input"
@@ -103,13 +113,25 @@ gitpath=$(git rev-parse --show-toplevel)
 # the path to the expected bash format of /c/some/path.  So we must do so manually via cygpath,
 # elsewise some of our later commands like grep might fail to find the file...
 
-if where cygpath; then
+if where cygpath > /dev/null 2&>1; then
     gitpath=$(cygpath "$gitpath")
 fi
 
 if [[ -z "$gitpath" ]]; then
     >&2 echo "ERROR: CWD is not a valid or recognized GIT directory."
     exit 1
+fi
+
+cd "$gitpath"
+if ! git diff-index --quiet HEAD --; then
+    if [[ "$FORCE_RESET" -eq "0" && "$NO_RESET" -eq "0" ]]; then
+        >&2 echo "ERROR: Local changes detected in the repository."
+        >&2 echo "  Specify -f to forcibly reset the repository to the new filter setting."
+        >&2 echo "  Specify --no-reset to skip the forcible reset step.  This will probably lead to unwanted"
+        >&2 echo "  or undefined behavior when attempting to switch branches and check in modifications"
+        >&2 echo "  to stale (unsmudged) files."
+        exit 1
+    fi
 fi
 
 echo "Applying changed to clone @ $gitpath"
@@ -174,5 +196,11 @@ if [[ "$FILTER_MODE" != "none" ]]; then
     echo "(note: any skipped entries already exist in attributes file)"
 
 else
-    echo "FilterTab attributes removed.  Uninstall complete."
+    echo "FilterTab attributes removed."
+fi
+
+if [[ "$NO_RESET" -ne "1" ]]; then
+    # git reset --hard isn't enough.  Gotta forcibly remove everything and re-checkout.
+    echo "Applying new filter settings (very hard reset)..."
+    git ls-files -z | xargs -0 rm ; git checkout -- .
 fi
