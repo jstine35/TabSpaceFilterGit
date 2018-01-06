@@ -6,15 +6,15 @@ It configures a given GIT clone to perform smudge/clean filters on all tab/space
 ## What is it and how do I use it?
 A mini-installer written in BASH script.  Run it from your GIT Bash Shell from within your target clone, same as you would run any git command line action.
 
-To edit locally as tabs and convert to spaces upstream:
-
-    $ git-filter-tab-install.sh --tabsize=4 --edit-as-tabs {repository_path}
-
 To edit locally as spaces and convert errant tabs to spaces upstream:
 
     $ git-filter-tab-install.sh --tabsize=4 --edit-as-spaces {repository_path}
 
-To disable the filter and restore default  behavior:
+To edit locally as tabs and convert to spaces upstream (risky with some caveats):
+
+    $ git-filter-tab-install.sh --tabsize=4 --edit-as-tabs {repository_path}
+
+To disable the filter and restore default behavior:
 
     $ git-filter-tab-install.sh --edit-as-is {repository_path}
 
@@ -33,11 +33,25 @@ tabs just appear as if the work of some mischievous digital goblin.  Regardless,
 effortlessly by using `git-filter-tab-install.sh --edit-as-spaces`
 
 ## What are the caveats?
-The only known caveat so far is that quoted text that depends on tabulation characters would be corrupted by this filter.
-The obvious workaround is to use `"\t"` instead of an actual ASCII TAB code.  It's highly unlikely any modern code would
+### When using `--edit-as-spaces` mode:
+The only known caveat so far is that quoted text strings that depend on tabulation characters would be corrupted by this filter.
+The obvious workaround is to use `"\t"` instead of an actual ASCII TAB character.  It's highly unlikely any modern code would
 run into this problem and, if it did, it's really a case of poor development practice anyway, and should be fixed to use
 `\t`.  In theory a static analyzer could be used to find such things and report them for fixing prior to converting a
 repository to rely automatic tab expansion.
+
+### When using `--edit-as-tabs` mode:
+Again the problem is quoted strings, but it's a much more serious when editing locally as tabs.  Any quoted string with
+spaces will end up having tab characters inserted into it, and that will result in some very strange looking text output.
+To work around this problem, the script invokes `unexpand --first-only` which limits tabulation to affect only whitespace
+at the start of a line.  This also has teo notable drawbacks:
+
+  * Multi-line strings are still affected (especially common in python and shell scripts)
+  * Leading-edge whitespace tabulation is practically useless, since that's the one place that modern IDEs *already*
+    behave like tab characters ehen when editing spaces (thanks to block/smart indentation)
+
+Fixing this problem means authoring a much more intelligent version of `unexpand`, one which is capable of excluding quoted
+strings from tabulation.
 
 ## Why does it exist?
 One of the grand old conundrums of programming and code etiquette is ***"Tabs or Spaces?"*** - 
@@ -60,4 +74,5 @@ Clearly a better solution would be generic to GIT itself, I thought.  It's only 
 In theory the upstream repository could choose to use either tabs or spaces, but my script doesn't support it and there's no plan to add such support.  Spaces play nicer with most HTML diff viewers, and more importantly there's no need to store "tab size" metadata with the repository.  An upstream repository stored as tabs automatically requires metadata just to implicitly convert it to spaces for local user editing.  Bottom line, ***always store upstream as spaces, and users who wish to edit using tabs locally can install this script***.
 
 ### TODOs
-* Add a --global option to apply settings globally.  Still a bit hesitant to do that.  Still too many ways this script could "go wrong" if used blanketedly for all clones, I think...
+ * Author a custom version of `unexpand` which avoids tabulating whitespace inside of quoted strings.
+ * Add a --global option to apply settings globally.  Still a bit hesitant to do that.  Still too many ways this script could "go wrong" if used blanketedly for all clones, I think...
