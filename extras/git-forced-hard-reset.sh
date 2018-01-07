@@ -28,5 +28,10 @@ if [[ -z "$gitpath" ]]; then
     exit 1
 fi
 
+# So what happens sometimes is that a tool, like tortoisegit, might have a lock on a file and
+# prevent it from being removed.  In such a case rm will fail for some files.  Not really anything
+# we can do about that.  At least a message gets printed to the user so they know something's up,
+# and it's up to them to just "try again later."
+
 echo "Forcibly resetting all tracked files."
 git ls-files -z | xargs -0 rm ; git checkout -- .
