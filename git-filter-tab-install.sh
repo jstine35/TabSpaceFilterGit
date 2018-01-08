@@ -30,8 +30,8 @@ filetypes_as_spaces=(
 
 FILTER_MODE=help
 SHOW_HELP=0
-FORCE_RESET=0
-NO_RESET=0
+FORCE_NORMALIZE=0
+NO_NORMALIZE=0
 ts=4
 
 POSITIONAL=()
@@ -45,11 +45,11 @@ case $key in
     shift 2 # past argument + value
     ;;
     -f|--force)
-    FORCE_RESET="1"
+    FORCE_NORMALIZE="1"
     shift
     ;;
-    --no-reset)
-    NO_RESET="1"
+    --no-normalize)
+    NO_NORMALIZE="1"
     shift
     ;;
     --filter-input|--edit-as-spaces)
@@ -124,10 +124,10 @@ fi
 
 cd "$gitpath"
 if ! git diff-index --quiet HEAD --; then
-    if [[ "$FORCE_RESET" -eq "0" && "$NO_RESET" -eq "0" ]]; then
+    if [[ "$FORCE_NORMALIZE" -eq "0" && "$NO_NORMALIZE" -eq "0" ]]; then
         >&2 echo "ERROR: Local changes detected in the repository."
-        >&2 echo "  Specify -f to forcibly reset the repository to the new filter setting."
-        >&2 echo "  Specify --no-reset to skip the forcible reset step.  This will probably lead to unwanted"
+        >&2 echo "  Specify -f to forcibly normalize the repository to the new filter setting."
+        >&2 echo "  Specify --no-normalize to skip the normalization step.  This will probably lead to unwanted"
         >&2 echo "  or undefined behavior when attempting to switch branches and check in modifications"
         >&2 echo "  to stale (unsmudged) files."
         exit 1
@@ -199,8 +199,45 @@ else
     echo "FilterTab attributes removed."
 fi
 
-if [[ "$NO_RESET" -ne "1" ]]; then
-    # git reset --hard isn't enough.  Gotta forcibly remove everything and re-checkout.
-    echo "Applying new filter settings (very hard reset)..."
-    git ls-files -z | xargs -0 rm ; git checkout -- .
+if [[ "$NO_NORMALIZE" -ne "1" ]]; then
+
+    # git has some very clever filesystem optimization tricks which can lead to seemingly unpredictable results
+	# when trying to get it to normalize all the files according to set filters.  Files which become normalized
+	# (tabs converted to spaces) may, inexplicably at any time, revert back to the tabulated files stored in the
+	# repo.  This happens because git doesn't really see the filtered files as having meaningful changes and thusly
+	# may 'optimize' them back into hardlinks at any time it sees fit.  The conditions in which git uses hardlink
+	# optimization also depends on the age of the repo and how many workspace files in the local clone are stored
+	# in .pack files.  In other words, behavior is _very_ unpredictable.
+	#
+    #  * git reset --hard isn't enough.
+	#  * removing all tracked files and doing `git checkout -- .` isn't enough either, and tends only to normalize
+	#    files that aren't .pack'd
+	# 
+	# The only way to do it _reliably_ is to transform the whole process of removing and re-adding files into a
+	# single internal git operation that literally takes the whole _working copy_ out of the equation.  To do that
+	# we must stage modified files as a commit, and then squash (amend) the unmodified versions.  Only then will
+	# the git backend smudge/clean filters do their job with impunity.
+	#
+	
+    echo "Normalizing whitespace (may take a while)..."
+	git reset --hard
+	if [[ "$FILTER_MODE" != "none" ]]; then
+		list=($(git ls-files))
+		total=${!list[@]}
+		echo "  > removing all files from index"
+		git rm --cached -r . > /dev/null
+		git commit -F - <<< "normalized whitespace"
+		echo "  > re-adding files to index"
+		echo "${list[@]}" | xargs -P1 -n16 git add -- 
+		echo "  > Amending commit 'normalize whitespace'"
+		if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
+			echo "  > good news: no whitespace normalization was needed!"
+			git reset HEAD^
+		else
+			echo "  > 'normalized whitespace' commit has been created as follows:"
+			git show --format=oneline --name-only HEAD^
+		fi
+	fi
 fi
+
+echo "All done!"
