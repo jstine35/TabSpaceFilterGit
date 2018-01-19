@@ -5,9 +5,42 @@
 # script gets around that by completely removing all tracked files in the repository and then
 # executing git checkout, thus ensuring that all files have been smudged as per new rules assignment.
 #
+# In --dry-run mode this script returns result '1' when the whitespace for the repository
+# is not normalized.
 #
+
+
 # Dev Note:  `git ls-files` works from the CWD, so use `git rev-parse --show-toplevel` to get the
 # root of the repo.
+
+DRY_RUN=0
+FORCE_NORMALIZE=0
+SHOW_HELP=0
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -f|--force)
+    FORCE_NORMALIZE="1"
+    shift
+    ;;
+    --dry-run)
+    DRY_RUN=1
+    shift
+    ;;
+    --help)
+    SHOW_HELP=1
+    shift
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
 
 rootpath=${1:-$(pwd)}
 if [[ "$rootpath" == */.git/* || "$rootpath" == */.git ]]; then
@@ -25,7 +58,15 @@ fi
 
 if [[ -z "$gitpath" ]]; then
     >&2 echo "ERROR: CWD is not a valid or recognized GIT directory."
-    exit 1
+    exit 5
+fi
+
+if ! git diff-index --quiet HEAD --; then
+    if [[ "$FORCE_NORMALIZE" -eq "0" ]]; then
+        >&2 echo "ERROR- Local changes detected in the repository."
+        >&2 echo "Specify -f to forcibly normalize the repository to the new filter setting."
+        exit 1
+    fi
 fi
 
 # git has some very clever filesystem optimization tricks which can lead to seemingly unpredictable results
@@ -46,22 +87,38 @@ fi
 # the git backend smudge/clean filters do their job with impunity.
 #
 # Note: this method also avoids edge case interference such as tortoisegit keeping a lock on a file and
-# preventing us from removing it.
+#       preventing us from removing it.
 #
 
-echo "Normalizing whitespace (may take a while)..."
+# what would be nice is if we could somehow lock the whole repo during this series of GIT commands, eg. a
+# persistent git.lock file of sorts.  Alas, hacks it is!
+
+if [[ "$DRY_RUN" -eq "1" ]]; then
+    echo "Performing whitespace normalization test (--dry-run)"
+else
+    echo "Normalizing whitespace"
+fi
+
 git reset --hard
 list=($(git ls-files))
 echo "  > removing all files from index"
 git rm --cached -r . > /dev/null
-git commit -F - <<< "normalized whitespace"
+git commit -F - <<< "normalized whitespace" > /dev/null
 echo "  > re-adding files to index"
 echo "${list[@]}" | xargs -P1 -n16 git add -- 
 echo "  > Amending commit 'normalize whitespace'"
 if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
-    echo "  > good news: no whitespace normalization was needed!"
+    echo "  > no whitespace normalization changes detected"
     git reset HEAD^
-else
+    exit 0
+elif [[ "$DRY_RUN" -eq "1" ]]; then
+    >&2 echo "Whitespace normalization check failed for the following files:"
+    git show --format=oneline --name-only HEAD^ | tail -n +2 1>&2
+    >&2 echo "[/eol]"
+    git reset --hard HEAD^ > /dev/null
+    exit 1
+elif [[ "$DRY_RUN" -eq "0" ]]; then
     echo "  > 'normalized whitespace' commit has been created as follows:"
     git show --format=oneline --name-only HEAD^
+    exit 0
 fi
