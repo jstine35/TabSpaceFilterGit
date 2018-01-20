@@ -60,9 +60,9 @@ echo "  > re-adding files to index"
 echo "${list[@]}" | xargs -P1 -n16 git add -- 
 echo "  > Amending commit 'normalize whitespace'"
 if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
-	echo "  > good news: no whitespace normalization was needed!"
-	git reset HEAD^
+    echo "  > good news: no whitespace normalization was needed!"
+    git reset HEAD^
 else
-	echo "  > 'normalized whitespace' commit has been created as follows:"
-	git show --format=oneline --name-only HEAD^
+    echo "  > 'normalized whitespace' commit has been created as follows:"
+    git show --format=oneline --name-only HEAD^
 fi
