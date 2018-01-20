@@ -4,6 +4,7 @@ FILTER_MODE=help
 SHOW_HELP=0
 GLOBAL_INSTALL=0
 REMOVE_INSTALL=0
+EDIT_AS_TABS=0
 ts=4
 
 POSITIONAL=()
@@ -16,12 +17,23 @@ case $key in
     ts="$2"
     shift 2 # past argument + value
     ;;
+    --filter-input|--edit-as-spaces)
+    EDIT_AS_TABS="0"
+	SHOW_HELP=0
+    shift
+    ;;
+    --filter-all|--edit-as-tabs)
+    EDIT_AS_TABS="1"
+	SHOW_HELP=0
+    shift
+    ;;
     -g|--global)
     GLOBAL_INSTALL="1"
     shift
     ;;
-    --uninstall)
+    --uninstall|--disable|--edit-as-is|--filter-none)
     REMOVE_INSTALL=1
+	SHOW_HELP=0
     shift
     ;;
     --help)
@@ -38,12 +50,16 @@ done
 me=$(basename "$0")
 
 if [[ "$SHOW_HELP" -eq "1" ]]; then
-    echo "Installs clean/smudge filters 'editastabs' and 'editasspaces' configured to a "
-    echo "specified tab size (default:4)"
+    echo "Installs clean/smudge filter family 'tabspace' configured to a specified"
+    echo "tab size (default:4) and whitespace mode (tabs or spaces)."
     echo
-    echo "  $ $me --tabsize=8 [repository_path]"
-    echo "  $ $me --tabsize=4 --global"
-    echo "  $ $me --uninstall"
+    echo "  $ $me --tabsize=4 [--global] [repository_path]"
+	echo
+	echo "To edit locally as tabs instead of spaces (not recommended due to caveats):"
+	echo "  $ $me --tabsize=4 --edit-as-tabs [--global] [repository_path]"
+	echo
+	echo "To disable all TabSpace filtering:"
+    echo "  $ $me --disable [--global]"
     echo
     echo '  `repository_path` is optional.  If not specified, the GIT repository associated'
     echo '  with the CWD is used.  The repository_path is unused when --global is specified.'
@@ -88,19 +104,31 @@ else
     scopestr="--global"
 fi
 
+getSmudgeAction() {
+	if [[ "$1" -eq "1" ]]; then
+		echo "unexpand --tabs=$2 --first-only"
+	else
+		echo "cat"
+	fi
+}
+
 if   [[ "$REMOVE_INSTALL" -eq "0" ]]; then
     printf "Registering filters with tabsize=$ts..."
-    git config "$scopestr"  filter.editastabs.clean     "expand   --tabs=$ts"                      || exit -1
-    git config "$scopestr"  filter.editastabs.smudge    "unexpand --tabs=$ts --first-only"         || exit -1
-    git config "$scopestr"  filter.editasspaces.clean   "expand   --tabs=$ts"                      || exit -1
-    git config "$scopestr"  filter.editasspaces.smudge  "cat"                                      || exit -1
+	
+	smudgeAction=$(getSmudgeAction "$EDIT_AS_TABS" $ts)
+	
+    git config "$scopestr"  filter.tabspace.clean     "expand   --tabs=$ts"             || exit -1
+    git config "$scopestr"  filter.tabspace.smudge    "$smudgeAction"                   || exit -1
+    git config "$scopestr"  filter.spaceonly.clean    "expand   --tabs=$ts"             || exit -1
+    git config "$scopestr"  filter.spaceonly.smudge   "cat"                             || exit -1
 
     for ats in 2 3 4 8; do
         printf "."
-        git config "$scopestr"  filter.editastabs$ats.clean    "expand   --tabs=$ats"                   || exit -1
-        git config "$scopestr"  filter.editastabs$ats.smudge   "unexpand --tabs=$ats   --first-only"    || exit -1
-        git config "$scopestr"  filter.editasspaces$ats.clean  "expand   --tabs=$ats"                   || exit -1
-        git config "$scopestr"  filter.editasspaces$ats.smudge "cat"                                    || exit -1
+		smudgeAction=$(getSmudgeAction "$EDIT_AS_TABS" $ats)
+        git config "$scopestr"  filter.tabspace$ats.clean    "expand   --tabs=$ats"     || exit -1
+        git config "$scopestr"  filter.tabspace$ats.smudge   "$smudgeAction"            || exit -1
+        git config "$scopestr"  filter.spaceony$ats.clean    "expand   --tabs=$ats"     || exit -1
+        git config "$scopestr"  filter.spaceonly$ats.smudge  "cat"                      || exit -1
     done
     printf "DONE!\n"
     echo
@@ -116,17 +144,17 @@ else
 	# git config returns code "5" on --unset if the setting didn't exist to be removed.
 	# We don't want to quit/abort on such an error, so don't catch errors here.
 
-    git config "$scopestr"  --unset filter.editastabs.clean          
-    git config "$scopestr"  --unset filter.editastabs.smudge         
-    git config "$scopestr"  --unset filter.editasspaces.clean        
-    git config "$scopestr"  --unset filter.editasspaces.smudge       
+    git config "$scopestr"  --unset filter.tabspace.clean
+    git config "$scopestr"  --unset filter.tabspace.smudge
+    git config "$scopestr"  --unset filter.spaceonly.clean
+    git config "$scopestr"  --unset filter.spaceonly.smudge
 
     for ats in 2 3 4 8; do
         printf "."
-        git config "$scopestr" --unset filter.editastabs$ats.clean   
-        git config "$scopestr" --unset filter.editastabs$ats.smudge  
-        git config "$scopestr" --unset filter.editasspaces$ats.clean 
-        git config "$scopestr" --unset filter.editasspaces$ats.smudge
+        git config "$scopestr" --unset filter.tabspace$ats.clean
+        git config "$scopestr" --unset filter.tabspace$ats.smudge  
+        git config "$scopestr" --unset filter.spaceonly$ats.clean
+        git config "$scopestr" --unset filter.spaceonly$ats.smudge  
     done
     printf "DONE!\n"
     
