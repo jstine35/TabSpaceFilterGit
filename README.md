@@ -1,25 +1,38 @@
 # TabSpaceFilterGit
 
 ## What does it do?
-It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters are the same ones used to implement GIT's LF/CRLF support (via `core.auto_crlf`), and this works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on proven tech -- LF/CRLF conversion is used by almost every Git for Windows client in existence and it mostly works without anyone thinking about it.
+It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters work on the same principle as the filter used to implement GIT's LF/CRLF support (via `core.auto_crlf`), and this works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on proven tech -- LF/CRLF conversion is used by almost every Git for Windows client in existence and it mostly works without anyone thinking about it.
 
 ## What is it and how do I use it?
-A mini-installer written in BASH script.  Run it from your GIT Bash Shell from within your target clone, same as you would run any git command line action.
+* Step 1. run the filter installer
+* Sept 2. add TabSpace normalization rules to your projects via `.git/info/attributes`
+* Step 3. _(optional)_ normalize the whitespace for your existing repository
+* Step 4. _(optional)_ check in `.gitattributes` with TabSpace normalization rules
+
+### Step 1. Run the filter installer
+The installer and normalizer utilities are BASH scripts.  Run them from your GIT Bash Shell from within your target clone, same as you would run any git command line action.  The recommended method is to start by modifying a couple repositories locally and then, if you find it to be working well, apply the settings globally.
 
 To edit locally as spaces and convert errant tabs to spaces on check-in:
 
-    $ git-filter-tab-install.sh --tabsize=4 --edit-as-spaces {repository_path}
+    $ git-tabspace-config.sh --tabsize=4 --edit-as-spaces [--global|--local] [repository_path]
 
-To edit locally as tabs and convert to spaces check-in _(risky with some caveats)_:
+To edit locally as tabs and convert to spaces check-in _(risky with caveats)_:
 
-    $ git-filter-tab-install.sh --tabsize=4 --edit-as-tabs {repository_path}
+    $ git-tabspace-config.sh --tabsize=4 --edit-as-tabs [--global|--local] [repository_path]
 
 To disable the filter and restore default behavior:
 
-    $ git-filter-tab-install.sh --edit-as-is {repository_path}
+    $ git-filter-tab-config.sh --edit-as-is [--global|--local] [repository_path]
 
  * if no `tabsize` is provided, a default of `4` is used.
- * if `repository_path` is omitted, the curent working directory (CDW) is assumed.
+ * local is assumed if neither `--global` or `--local` is specified
+ * if `repository_path` is omitted, the curent working directory (CWD) is assumed
+ * all changes are applied within the `.git` dir, no changes are made to working copy files
+ * `--uninstall` and `--disable` are aliased for `--edit-as-is`
+
+### Step 2. Add TabSpace normalization rules to your projects
+
+
 
 ## What does it depend on?
  * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
