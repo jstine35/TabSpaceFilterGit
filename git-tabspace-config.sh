@@ -1,8 +1,17 @@
 #!/bin/bash
 
+# local config feature is provided by this script but is not really recommended.
+# It makes more sense (usually) to just use a global config and then manage local
+# configs using only the .gitattributes or .git/info/attributes to control filter usage.
+
+# TODO: Local `disable` feature should operate differently from local `uninstall` feature:
+#    disable          - clean and smudge filters should be set to `cat` to override global settings.
+#    remove/uninstall - clean and smudge filters should be unset, so that global settings are used.
+#  In both cases, the actual filter settings for the local repo should be shown to the user.
+
 FILTER_MODE=help
 SHOW_HELP=0
-GLOBAL_INSTALL=0
+GLOBAL_INSTALL=1
 REMOVE_INSTALL=0
 EDIT_AS_TABS=0
 ts=4
@@ -29,6 +38,10 @@ case $key in
     ;;
     -g|--global)
     GLOBAL_INSTALL="1"
+    shift
+    ;;
+    -l|--local)
+    GLOBAL_INSTALL="0"
     shift
     ;;
     --uninstall|--disable|--edit-as-is|--filter-none)
@@ -133,8 +146,11 @@ if   [[ "$REMOVE_INSTALL" -eq "0" ]]; then
     printf "DONE!\n"
     echo
     echo "TabSpace filtering has been installed.  Filtering will be applied to files according"
-    echo "to gitattribute specifications, which typically should be setup on a per-project basis."
+    echo "to gitattribute specifications, which are typically set up on a per-project basis."
     echo
+    echo "Use git-tabspaceattrib.sh to get a list of current recommended file extension filters"
+	echo "for use in .gitattributes, or to install attributes into .git dir (untracked)."
+	echo
     echo "For best results, use git-tabspace-normalize.sh to normalize whitespace before"
     echo "checking in a modified .gitattributes file."
     echo
@@ -158,11 +174,19 @@ else
     done
     printf "DONE!\n"
     
-    echo
-    echo "TabSpace filtering has been disabled.  TabSpace filter specifications in existing"
-    echo ".gitattributes will be ignored.  Executing git-tabspace-normalize.sh will have no"
-    echo "effect on tabs/spaces whitespace.  Normalization of newlines may still occur."
-    echo
+	if [[ "$GLOBAL_INSTALL" -eq "0" ]]; then
+		echo
+		echo "Local TabSpace filtering has been disabled. TabSpace filter specifications in existing"
+		echo ".gitattributes will be ignored and executing git-tabspace-normalize.sh will have no"
+		echo "effect on tabs/spaces whitespace. Normalization of newlines may still occur."
+		echo
+	else
+		echo
+		echo "Global TabSpace filtering has been disabled. Be weary that local TabSpace filtering"
+		echo "configurations may still be bound to individual projects, if you have used this tool"
+		echo "previously to install local filter settings."
+		echo
+	fi
 fi
 
 exit 0
