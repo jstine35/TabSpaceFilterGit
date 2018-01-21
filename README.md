@@ -1,50 +1,120 @@
 # TabSpaceFilterGit
 
 ## What does it do?
-It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters work on the same principle as the filter used to implement GIT's LF/CRLF support (via `core.auto_crlf`), and this works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on proven tech -- LF/CRLF conversion is used by almost every Git for Windows client in existence and it mostly works without anyone thinking about it.
+It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters
+work on the same principle as the filter used to implement GIT's LF/CRLF support (via `core.auto_crlf`), and this
+works the same way: checkout, commit, diff, etc. all work implicitly.  The local user sees everything as either
+tabs or spaces (depending on user preference), while the upstream repository is stored as spaces.  It's based on
+proven tech -- LF/CRLF conversion is used by almost every Git for Windows client in existence and it mostly works
+without anyone thinking about it.
 
-## What is it and how do I use it?
-* Step 1. run the filter installer
-* Sept 2. add TabSpace normalization rules to your projects via `.git/info/attributes`
+## What does this software depend on?
+ * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard
+ * the shell scripts require at minimum BASH 4.0+
+
+#### to sum up by platform:
+ * Linux: everything should be in place already.  Enjoy!
+ * Windows: dependencies are provided as part of `Git for Windows 2.10` or newer
+ * OS-X: `brew install coreutils` may be required, depending on your OS version
+
+## How do I use it?
+* Step 1. run the filter config installer
+* Step 2. add TabSpace normalization rules to your projects
 * Step 3. _(optional)_ normalize the whitespace for your existing repository
 * Step 4. _(optional)_ check in `.gitattributes` with TabSpace normalization rules
 
 ### Step 1. Run the filter installer
-The installer and normalizer utilities are BASH scripts.  Run them from your GIT Bash Shell from within your target clone, same as you would run any git command line action.  The recommended method is to start by modifying a couple repositories locally and then, if you find it to be working well, apply the settings globally.
+The installer and normalizer utilities are BASH scripts.  Run them from your GIT Bash Shell from within your target
+clone, same as you would run any git command line action.  The recommended method is to start by modifying a couple
+repositories locally and then, if you find it to be working well, apply the settings globally.
 
 To edit locally as spaces and convert errant tabs to spaces on check-in:
 
-    $ git-tabspace-config.sh --tabsize=4 --edit-as-spaces [--global|--local] [repository_path]
+    $ git-tabspace-config.sh --tabsize=4 --edit-as-spaces [--global|--local] [local_repository_path]
 
 To edit locally as tabs and convert to spaces check-in _(risky with caveats)_:
 
-    $ git-tabspace-config.sh --tabsize=4 --edit-as-tabs [--global|--local] [repository_path]
+    $ git-tabspace-config.sh --tabsize=4 --edit-as-tabs [--global|--local] [local_repository_path]
 
-To disable the filter and restore default behavior:
+To remove the filter and restore default git behavior (or default global behavior is applied locally):
 
-    $ git-filter-tab-config.sh --edit-as-is [--global|--local] [repository_path]
+    $ git-tabspace-config.sh --remove [--global|--local] [local_repository_path]
 
- * if no `tabsize` is provided, a default of `4` is used.
- * local is assumed if neither `--global` or `--local` is specified
- * if `repository_path` is omitted, the curent working directory (CWD) is assumed
- * all changes are applied within the `.git` dir, no changes are made to working copy files
- * `--uninstall` and `--disable` are aliased for `--edit-as-is`
+To forcibly disable the filter on a local repository, overriding global settings:
+
+    $ git-tabspace-config.sh --disable-local [repository_path]
+
+ * if `tabsize` is omitted, a default of `4` is used.
+ * global is default if neither `--global` or `--local` is specified
+ * `local_repository_path` is only relevant if `--local` is specified
+ * if `local_repository_path` is omitted, the current working directory (CWD) is assumed
+ * `--uninstall` and `--remove` are aliases
 
 ### Step 2. Add TabSpace normalization rules to your projects
 
+There are two ways to add TabSpace normalization rules to your project.
+
+#### As a contributor or when forking:
+ * If you are contributing to a project that you don't own outright then the recommended method is to modify the 
+   unchecked `.git/info/attributes` file.  This will apply filtering rules for just you alone and will not alter
+   upstream behavior.
+
+#### As an owner:
+ * As an owner of a project the best way should be to modify `.gitattributes` directly and push it upstream.  
+   It is recommended as a second step to add the TabFilter installer, either via npm or nuget package, to ensure
+   contributors have the filters configured.  The `.gitattributes` filter specifications will be ignored for users
+   that do not have the TabSpace filters configured.
+
+A sample set of attributes can be viewed on the repository:
+ * https://github.com/jstine35/TabSpaceFilterGit/blob/master/gitattributes.sample
+
+A helper script is also provided which can write that same file on the command line or clipboard, or copy it into
+the local `.git/info/attributes` for you.
+
+***Note*** `git-tabspace-attrib.sh` provides a nice starting point/template, but there are a great number of
+common file extensions still missing from the sample attributes file.  These days there's more `.config` style
+files than anyone can count, and so ___there's a good chance you'll need to edit the attributes by hand regardless___.
+
+To write contents to stdout or clipboard:
+
+    $ git-tabspace-attrib.sh --print
+    $ git-tabspace-attrib.sh --clip
+
+To append contents to existing `.gitattributes`, use the bash pipe for append (`>>`):
+
+    $ git-tabspace-attrib.sh -p >> .gitattributes
+
+If no parameters are specified, the script will automatically copy the sample attributes file into the
+`.git/info/attributes` or report a problem if the file already exists and is not empty -- in which case
+the file will need to be updated manually.
+
+### Step 3. Normalize whitespace for your repository
+
+_This section is mostly specific to project owners.  Contributors can mostly get away without full repository-wide
+normalization, though at the cost of occasionally having GIT randomly and inconveniently normalize files in 
+places you never touched._
+
+See `git-tabspace-normalize.sh --help`
+
+#### What happens if I don't normalize the repository?
+
+You risk having un-normalized files in the repo which will "self-normalize" at random times for different users
+during checkout/cherry-pick/merge operations.  Those kind of rendom issues can occur for weeks or even months for
+some users, depending on their workflow and project activity level.  This can cause cherry pick and rebase operations
+to fail in an unresolvable manner where every attempt to stash or revert the auto-normalized file results in the 
+file re-normalizing.  This is a common problem already when using GIT's built-in Auto-CRLF feature.
 
 
-## What does it depend on?
- * The tool uses `expand` and `unexpand` tools which are part of the POSIX 97 standard.
- * Windows: dependencies are provided as part of `Git for Windows 2.10` or newer.
- * OS-X: `brew install coreutils` may be required, depending on your OS version.
+___[todo section]___
+
+-------------------
 
 ## Who can benefit from this tool?
-Surprisingly, almost everyone!  Whether you use spaces or tabs in your local edits, you can probably benefit from this
-filter.  I can't speak for everyone but no matter how hard ***I*** try, tabs somehow slip in.  Sometimes it's from
-some code I copied from a website, or perhaps some snippet someone pasted to me in Slack or Pastebin.  Sometimes it seems as if
-tabs just appear as if the work of some mischievous digital goblin _(one likely named Visual Studio)_.  Regardless,
-these problems can be fixed effortlessly by using `git-filter-tab-install.sh --edit-as-spaces`
+Surprisingly, almost everyone!  Whether you use spaces or tabs in your local edits, you can probably benefit from
+this filter.  I can't speak for everyone but no matter how hard ***I*** try, tabs somehow slip in.  Sometimes it's
+from some code I copied from a website, or perhaps some snippet someone pasted to me in Slack or Pastebin. 
+Sometimes it seems as if tabs just appear as if the work of some mischievous digital goblin _(one likely named Visual
+Studio)_.  Regardless, these problems can be fixed effortlessly by using `git-filter-tab-install.sh --edit-as-spaces`
 
 ## What are the caveats?
 #### When using `--edit-as-spaces` mode:
@@ -67,6 +137,9 @@ Fixing this problem means authoring a much more intelligent version of `unexpand
 quoted strings from tabulation.  I've added a text file [intelligent-unexpand.md](intelligent-unexpand.md) to outline
 what I think would be an ideal approach to intelligent tabulation.
 
+----------------------------
+## Other Miscellaneous Notes for the Curious
+
 ## Why does it exist?
 One of the grand old conundrums of programming and code etiquette is ***"Tabs or Spaces?"*** - 
 This question is often complicated by a slew of popular editors on both Windows and Linux platforms with
@@ -87,32 +160,11 @@ Clearly a better solution would be generic to GIT itself, I thought.  It's only 
 able to handle the conversion in roughly the same way that GIT already handles CR/LF/CRLF conversions via the `core.auto_crlf` 
 setting?  I did some digging and discovered that GIT exposes these automatic conversion steps via `filter.smudge` and 
 `filter.clean` settings.  A few quick sandbox tests proved the concept.  This handy script followed, so that I could 
-quicly apply these settings to all the clones that I work on _(which number in the dozens anymore these days)_.
+quickly apply these settings to all the clones that I work on _(which number in the dozens anymore these days)_.
 
 I was inspired by answers found [on this StackOverflow page](https://stackoverflow.com/questions/2316677/can-git-automatically-switch-between-spaces-and-tabs) 
 and decided to build a complete solution that would make it easy for me to quickly and safely apply tabspace expansion 
 to any variety of projects.
-
-----------------------------
-## Other Miscellaneous Notes for the Curious
-
-### Why doesn't this modify the project `.gitattributes` by default?
-Time and energy limitations (for now).  I believe that there is value to having the `--edit-as-spaces` mode baked into a
-project's `.gitattributes`.  There's a complication that I haven't yet decided a good workaround yet: distributing the 
-filter configuration to users who clone the project.  Adding the various `filter=editasspaces` attributes is easy enough,
-but they don't actually do anything unless the user installs the appropriate filters to git in the first place.  There are
-also some caveats for order of operations.  The following steps produce the "best" results when applying this filter to a
-new GIT clone (this also applies to CRLF normalization, by the way):
-
-1. Install filters locally
-2. Force GIT to re-checkout everything, using the `rm` (remove all files) method.
-3. commit normalized repository
-4. modify .gitattributes
-
-If you don't follow those steps, you risk having un-normalized files in the repo which will "self-normalize" at random
-times for different users during checkout/cherry-pick/merge operations.  Those kind of rendom issues can occur for weeks
-or even months for some users, depending on their workflow and project activity level.  It would be ideal if the script
-helps do all those things for us.
 
 ### Limitation by design - Always use Spaces Upstream
 In theory the upstream repository could choose to use either tabs or spaces, but my script doesn't support it and there's
