@@ -113,12 +113,12 @@ if ! git commit -C HEAD --amend > /dev/null 2>&1; then
     exit 0
 elif [[ "$DRY_RUN" -eq "1" ]]; then
     >&2 echo "Whitespace normalization check failed for the following files:"
-    git show --format=oneline --name-only HEAD^ | tail -n +2 1>&2
+    git show --format=oneline --name-only HEAD | tail -n +2 1>&2
     >&2 echo "[/eol]"
     git reset --hard HEAD^ > /dev/null
     exit 1
 elif [[ "$DRY_RUN" -eq "0" ]]; then
     echo "  > 'normalized whitespace' commit has been created as follows:"
-    git show --format=oneline --name-only HEAD^
+    git show --format=oneline --name-only HEAD
     exit 0
 fi
