@@ -64,7 +64,7 @@ fi
 
 attribdest="$gitpath/.git/info/attributes"
 
-if [[ ! -s ".git/info/attributes" ]]; then
+if [[ -s "$gitpath/.git/info/attributes" ]]; then
 	if cmp -s "$asset_dir/gitattributes.sample" "$attribdest"; then
 		# files are the same, nothing to do!
 		exit 0

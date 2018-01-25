@@ -69,6 +69,44 @@ if ! git diff-index --quiet HEAD --; then
     fi
 fi
 
+if [[ "$DRY_RUN" -eq "1" ]]; then
+    echo "Performing whitespace normalization test (--dry-run)"
+else
+    echo "Normalizing whitespace"
+fi
+
+# GIT version 2.16 added --renormalize option -- released Oct 2017 on linux and Jan 2018 on Windows. It does
+# precisely what this script does, except as a slightly more efficient built-in operation.  Favor that, but if
+# it fails, fall back on the method that works well for older GIt versions.
+
+if git add --renormalize >/dev/null 2>&1; then
+	
+	# Normalize operation succeeded.  The working tree diff has our normalization files (not committed):
+
+	difflist=$(git diff --cached --name-only 1>&2)
+	
+	if [[ -z "$difflist" ]]; then
+		echo "  > re-normalization checks passed"
+		git reset --hard > /dev/null
+		exit 0
+	fi
+
+	if [[ "$DRY_RUN" -eq "1" ]]; then
+		>&2 echo "Whitespace normalization check failed for the following files:"
+		git diff --cached --name-only 1>&2
+		>&2 echo "[/eol]"
+		git reset --hard > /dev/null
+		exit 1
+	else
+		git commit -F - <<< "normalized whitespace" > /dev/null
+		echo "  > 'normalized whitespace' commit has been created as follows:"
+		git show --format=oneline --name-only HEAD
+		exit 0
+	fi
+fi
+
+# TIME FOR OLD SKOOL!  (GIT prior to 2.16)
+#
 # git has some very clever filesystem optimization tricks which can lead to seemingly unpredictable results
 # when trying to get it to normalize all the files according to set filters.  Files which become normalized
 # (tabs converted to spaces) may, inexplicably at any time, revert back to the tabulated files stored in the
@@ -93,31 +131,50 @@ fi
 # what would be nice is if we could somehow lock the whole repo during this series of GIT commands, eg. a
 # persistent git.lock file of sorts.  Alas, hacks it is!
 
-if [[ "$DRY_RUN" -eq "1" ]]; then
-    echo "Performing whitespace normalization test (--dry-run)"
-else
-    echo "Normalizing whitespace"
-fi
+get_exec_file_list() {
+	git ls-tree -r HEAD | grep 100755 | cut -d $'\t' -f2
+}
+
+LFS=
+exec_fix_list=$(get_exec_file_list)
 
 git reset --hard
-list=($(git ls-files))
+
+# make sure to exclude submodules from the list (determined from .gitmodules, if present)
+list=($(git ls-files | grep -Fxvf  <(git config --file .gitmodules --name-only --get-regexp path | cut -d '.' -f2-)))
+
 echo "  > removing all files from index"
 git rm --cached -r . > /dev/null
 git commit -F - <<< "normalized whitespace" > /dev/null
 echo "  > re-adding files to index"
-echo "${list[@]}" | xargs -P1 -n16 git add -- 
+echo "${list[@]}"    | xargs -P1 -n16 git add -f -- 
 echo "  > Amending commit 'normalize whitespace'"
 if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
     echo "  > no whitespace normalization changes detected"
     git reset HEAD^
     exit 0
-elif [[ "$DRY_RUN" -eq "1" ]]; then
+fi
+
+# On windows, the exec bit won't be preserved and must be re-applied manually.
+# It is done here as its own amended commit.  git update-index doesn't play nice with existing working tree
+# changes on Windows.
+
+if [[ -n "$exec_fix_list" ]]; then
+	echo "$exec_fix_list" | xargs -P1 -n1 git update-index --chmod=+x
+	if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
+		echo "  > re-normalization checks passed"
+		git reset HEAD^
+		exit 0
+	fi
+fi
+
+if [[ "$DRY_RUN" -eq "1" ]]; then
     >&2 echo "Whitespace normalization check failed for the following files:"
     git show --format=oneline --name-only HEAD | tail -n +2 1>&2
     >&2 echo "[/eol]"
     git reset --hard HEAD^ > /dev/null
     exit 1
-elif [[ "$DRY_RUN" -eq "0" ]]; then
+else
     echo "  > 'normalized whitespace' commit has been created as follows:"
     git show --format=oneline --name-only HEAD
     exit 0
