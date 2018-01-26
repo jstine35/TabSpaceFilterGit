@@ -1,4 +1,5 @@
-# TabSpaceFilterGit
+# git-auto-tabspace
+Whitespace conversion filter installer for GIT, making it easy to edit files locally as tabs or spaces.
 
 ## What does it do?
 It configures a given GIT clone to perform smudge/clean filters on all tab/space characters.  Smudge/Clean filters
