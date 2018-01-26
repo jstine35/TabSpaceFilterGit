@@ -91,19 +91,48 @@ the file will need to be updated manually.
 
 ### Step 3. Normalize whitespace for your repository
 
-_This section is mostly specific to project owners.  Contributors can mostly get away without full repository-wide
-normalization, though at the cost of occasionally having GIT randomly and inconveniently normalize files in 
-places you never touched._
+_This section is mostly specific to project owners.  Contributors can usually skip performing full
+repository-wide normalization. The drawback is that until renormalized, GIT will randomly and
+inconveniently renormalize files you never even touched._
 
-See `git-tabspace-normalize.sh --help`
+As of **GIT v2.16+** there is a new feature built-in that re-normalizes files or, as shown here, all
+files in the repository:
+
+    $ git add --renormalize .
+    
+The `git-tabspace-renormalize.sh` script provided as part of this project does the same thing but in a manner
+that is compatibile with older versions of GIT.  The script does a version check on GIT, and will use the
+`--renormalize` method if supported, and fall back on the manual re-normalization process if not.
+
+Rest of this section is a WIP, see `git-tabspace-normalize.sh --help`
 
 #### What happens if I don't normalize the repository?
 
-You risk having un-normalized files in the repo which will "self-normalize" at random times for different users
-during checkout/cherry-pick/merge operations.  Those kind of rendom issues can occur for weeks or even months for
-some users, depending on their workflow and project activity level.  This can cause cherry pick and rebase operations
-to fail in an unresolvable manner where every attempt to stash or revert the auto-normalized file results in the 
-file re-normalizing.  This is a common problem already when using GIT's built-in Auto-CRLF feature.
+You risk having un-normalized files in the repo which will _renormalize_ at random times for different users
+during checkout/cherry-pick/merge operations.  Git has a number of clever filesystem store optimizations which
+cause it to run (or skip) the `smudge`/`clean` filters seemingly at random.  These issues can occur for weekso
+or even months for some users, depending on their workflow, platform (win vs linux), and project activity level.
+This can cause cherry pick and rebase operations to fail in an unresolvable manner where every attempt to stash
+or revert the auto-normalized file results in the  file re-normalizing.  Some readers may be familiar with it:
+_This is a common problem already when using GIT's built-in Auto-CRLF feature._
+
+#### Using renormalization as a CI step (PR check)
+
+`git-tabspace-renormalize.sh --dry-run` will perform a complete renormalization step and return either
+`0` or `1` according to the state of the repository.  If the repository has inconsistent whitespace -- either
+due to AutoCRLF or AutoTabSpace -- then the script returns `1`.  If all files are normalized, it returns `0`.
+When inconsistent whitespace is detected, the script outputs a list of affected files to `stderr` so that the 
+cause is plainly visible from most standard CI job managers.
+
+A check embedded into a CI step might look something like this (bash shell style):
+
+    if ! git-tabspace-renormalize.sh; then
+        # whitespace normalization failed, abort build.
+        # git-tabspace-renormalize already reported errors to stdout, so further action needed.
+        exit -1
+    fi
+
+***Renormalizing a project is easy, so our advice is to just get it over with!***
 
 
 ___[todo section]___
