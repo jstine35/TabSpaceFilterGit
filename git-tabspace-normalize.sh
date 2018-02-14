@@ -42,6 +42,8 @@ case $key in
 esac
 done
 
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
 rootpath=${1:-$(pwd)}
 if [[ "$rootpath" == */.git/* || "$rootpath" == */.git ]]; then
     while [[ "$rootpath" == */.git/* || "$rootpath" == */.git ]]; do
@@ -52,7 +54,7 @@ fi
 
 gitpath=$(git rev-parse --show-toplevel)
 
-if where cygpath > /dev/null 2>&1; then
+if which cygpath > /dev/null 2>&1; then
     gitpath=$(cygpath "$gitpath")
 fi
 
