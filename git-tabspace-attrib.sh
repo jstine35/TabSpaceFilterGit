@@ -28,6 +28,8 @@ case $key in
 esac
 done
 
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
 asset_dir=$(dirname "$0")
 
 exit_time=0
@@ -66,7 +68,7 @@ attribdest="$gitpath/.git/info/attributes"
 
 if [[ -s "$gitpath/.git/info/attributes" ]]; then
     if cmp -s "$asset_dir/gitattributes.sample" "$attribdest"; then
-        # files are the same, nothing to do!
+        echo "$gitpath/.git/info/attributes is already up-to-date."
         exit 0
     else
         >&2 echo "$attribdest : already exists and has unknown contents."
@@ -77,4 +79,5 @@ if [[ -s "$gitpath/.git/info/attributes" ]]; then
     fi
 fi
 
+echo "Adding TabSpace filtering rules to $gitpath/.git/info/attributes"
 cp "$asset_dir/gitattributes.sample" ".git/info/attributes"
