@@ -9,8 +9,8 @@ do
 key="$1"
 
 case $key in
-	-p|--print)
-	PRINT_STDOUT=1
+    -p|--print)
+    PRINT_STDOUT=1
     shift
     ;;
     --clip|--clipboard)
@@ -32,13 +32,13 @@ asset_dir=$(dirname "$0")
 
 exit_time=0
 if [[ "$PRINT_STDOUT" -eq "1" ]]; then
-	cat "$asset_dir/gitattributes.sample"
-	exit_time=1
+    cat "$asset_dir/gitattributes.sample"
+    exit_time=1
 fi
 
 if [[ "$CLIBOARD" -eq "1" ]]; then
-	cat "$asset_dir/gitattributes.sample" > /dev/clipboard
-	exit_time=1
+    cat "$asset_dir/gitattributes.sample" > /dev/clipboard
+    exit_time=1
 fi
 
 [ "$exit_time" -eq "1" ] && exit 0
@@ -65,16 +65,16 @@ fi
 attribdest="$gitpath/.git/info/attributes"
 
 if [[ -s "$gitpath/.git/info/attributes" ]]; then
-	if cmp -s "$asset_dir/gitattributes.sample" "$attribdest"; then
-		# files are the same, nothing to do!
-		exit 0
-	else
-		>&2 echo "$attribdest : already exists and has unknown contents."
-		>&2 echo "Please update the file manually. Load the file into a test editor"
-		>&2 echo "and then run this tool with --clip to copy the tabspace attributes"
-		>&2 echo "filters into the clipboard."
-		exit 1
-	fi
+    if cmp -s "$asset_dir/gitattributes.sample" "$attribdest"; then
+        # files are the same, nothing to do!
+        exit 0
+    else
+        >&2 echo "$attribdest : already exists and has unknown contents."
+        >&2 echo "Please update the file manually. Load the file into a test editor"
+        >&2 echo "and then run this tool with --clip to copy the tabspace attributes"
+        >&2 echo "filters into the clipboard."
+        exit 1
+    fi
 fi
 
 cp "$asset_dir/gitattributes.sample" ".git/info/attributes"

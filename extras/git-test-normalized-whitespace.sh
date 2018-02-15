@@ -44,14 +44,14 @@ echo "  > re-adding files to index"
 echo "${list[@]}" | xargs -P1 -n16 git add -- 
 echo "  > Amending commit 'normalize whitespace'"
 if ! git commit -C HEAD --amend > /dev/null 2>&1; then 
-	echo "  > normalization check passed!"
+    echo "  > normalization check passed!"
     printf "Rolling back staged normalization commit... "
     git checkout $restore_ref
     echo "all done!"
 else
-	>&2 echo "  > 'normalized whitespace' commit failed."
-	>&2 echo "  > The following files have inconsistent newlines or whitespace:"
-	git show --format=oneline --name-only HEAD | tail -n +1 >2
+    >&2 echo "  > 'normalized whitespace' commit failed."
+    >&2 echo "  > The following files have inconsistent newlines or whitespace:"
+    git show --format=oneline --name-only HEAD | tail -n +1 >2
     git checkout $restore_ref > /dev/null 2>&1
     >&2 echo "ERROR: Inconsistent newlines or whitespace detected!"
     exit 2
