@@ -14,6 +14,7 @@ SHOW_HELP=0
 GLOBAL_INSTALL=1
 REMOVE_INSTALL=0
 EDIT_AS_TABS=0
+SHOW_INVALID_OPT=0
 ts=4
 
 POSITIONAL=()
@@ -53,6 +54,11 @@ case $key in
     SHOW_HELP=1
     shift
     ;;
+	--*)   # invalid option, report message and quit.
+	>&2 echo "Unrecognized switch: $1"
+	SHOW_INVALID_OPT=1
+	shift
+	;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
     shift # past argument
@@ -60,19 +66,33 @@ case $key in
 esac
 done
 
+set -- "${POSITIONAL[@]}" # restore positional parameters
 me=$(basename "$0")
 
 if [[ "$SHOW_HELP" -eq "1" ]]; then
     echo "Installs clean/smudge filter family 'tabspace' configured to a specified"
-    echo "tab size (default:4) and whitespace mode (tabs or spaces)."
+    echo "tab size and local whitespace mode."
     echo
-    echo "  $ $me --tabsize=4 [--global] [repository_path]"
+	echo " --global  |-g       Applies changes to the global .gitconfig (default)"
+	echo " --local   |-l       Applies changes to the local repository (not recommended)"
+	echo " --tabsize |-t       Sets tabsize for file types without a fixed tabsize attribute (default: 4)"
+	echo " --edit-as-spaces    Workspace text files will have all whitespace expanded as spaces (default)"
+	echo " --edit-as-tabs      Workspace text files will have _leading line_ tabulators only"
+	echo " --edit-as-is        Workspace text files will reflect exact whitespace in the index, but"
+	echo "                     will _still_ be normalized as spaces when updating the index"
+	echo " --disable           No whitespace normalization is performed. Effective on local repositories"
+	echo "                     even when a global setting is in effect"
+	echo " --uninstall         Removes  TabSpace filter configurations. If done locally then TabSpace behavior"
+	echo "                     will revert back to whatever is configred globally"
+	echo
+	echo "Usage Examples:"
+    echo "  $ $me [repository_path]"
 	echo
 	echo "To edit locally as tabs instead of spaces (not recommended due to caveats):"
-	echo "  $ $me --tabsize=4 --edit-as-tabs [--global] [repository_path]"
+	echo "  $ $me --edit-as-tabs [--local] [repository_path]"
 	echo
-	echo "To disable all TabSpace filtering:"
-    echo "  $ $me --disable [--global]"
+	echo "To disable TabSpace filtering for a specific repository:"
+    echo "  $ $me --disable --local [repository_path]"
     echo
     echo '  `repository_path` is optional.  If not specified, the GIT repository associated'
     echo '  with the CWD is used.  The repository_path is unused when --global is specified.'
@@ -81,7 +101,10 @@ if [[ "$SHOW_HELP" -eq "1" ]]; then
     exit 1
 fi
 
-set -- "${POSITIONAL[@]}" # restore positional parameters
+if [[ "$SHOW_INVALID_OPT" -eq "1" ]]; then
+	>&2 echo "Try --help for available options."
+	exit 1
+fi
 
 if [[ "$GLOBAL_INSTALL" -eq "0" ]]; then
     rootpath=${1:-$(pwd)}
@@ -99,7 +122,7 @@ if [[ "$GLOBAL_INSTALL" -eq "0" ]]; then
     # the path to the expected bash format of /c/some/path.  So we must do so manually via cygpath,
     # elsewise some of our later commands like grep might fail to find the file...
 
-    if where cygpath > /dev/null 2>&1; then
+    if which cygpath >& /dev/null; then
         gitpath=$(cygpath "$gitpath")
     fi
 
@@ -110,11 +133,11 @@ if [[ "$GLOBAL_INSTALL" -eq "0" ]]; then
 
     cd "$gitpath"
 
-    echo "Applying local changes to clone @ $gitpath"
     scopestr="--local"
+	echo "Applying local changes to clone @ $gitpath"
 else
-    echo "Applying changes globally."
     scopestr="--global"
+	echo "Applying changes globally."
 fi
 
 getSmudgeAction() {
