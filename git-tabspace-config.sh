@@ -163,7 +163,7 @@ if   [[ "$REMOVE_INSTALL" -eq "0" ]]; then
 		smudgeAction=$(getSmudgeAction "$EDIT_AS_TABS" $ats)
         git config "$scopestr"  filter.tabspace$ats.clean    "expand   --tabs=$ats"     || exit -1
         git config "$scopestr"  filter.tabspace$ats.smudge   "$smudgeAction"            || exit -1
-        git config "$scopestr"  filter.spaceony$ats.clean    "expand   --tabs=$ats"     || exit -1
+        git config "$scopestr"  filter.spaceonly$ats.clean   "expand   --tabs=$ats"     || exit -1
         git config "$scopestr"  filter.spaceonly$ats.smudge  "cat"                      || exit -1
     done
     printf "DONE!\n"
